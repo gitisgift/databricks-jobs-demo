@@ -35,7 +35,9 @@ resources:
 
       tasks:
         - task_key: customer_etl
-          job_cluster_key: shared_cluster
+          #job_cluster_key: shared_cluster
+
+          environment_key: serverless
 
           notebook_task:
             notebook_path: notebooks/customer_etl.py
@@ -44,9 +46,14 @@ resources:
               source: job
               limit: "50"
 
-      job_clusters:
-        - job_cluster_key: shared_cluster
-          new_cluster:
-            spark_version: 14.3.x-scala2.12
-            node_type_id: Standard_DS3_v2
-            num_workers: 2
+      # job_clusters:
+      #   - job_cluster_key: shared_cluster
+      #     new_cluster:
+      #       spark_version: 14.3.x-scala2.12
+      #       node_type_id: Standard_DS3_v2
+      #       num_workers: 2
+
+      environments:  # for serverless
+        - environment_key: serverless
+          spec:
+            client: "1"

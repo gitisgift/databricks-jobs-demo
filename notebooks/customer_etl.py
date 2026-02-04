@@ -4,9 +4,9 @@
 
 # COMMAND ----------
 
-dbutils.widgets.text("catalog", "")
-dbutils.widgets.text("source", "")
-dbutils.widgets.text("limit", "10")
+# dbutils.widgets.text("catalog", "")
+# dbutils.widgets.text("source", "")
+# dbutils.widgets.text("limit", "10")
 
 catalog = dbutils.widgets.get("catalog")
 source = dbutils.widgets.get("source")
@@ -18,17 +18,17 @@ from jobs.logic import generate_rows
 
 # COMMAND ----------
 
-spark.sql(f"USE CATALOG {catalog}")
-spark.sql("CREATE SCHEMA IF NOT EXISTS demo")
+# spark.sql(f"USE CATALOG {catalog}")
+# spark.sql("CREATE SCHEMA IF NOT EXISTS demo")
 
 rows = generate_rows(limit, source)
 
 df = spark.range(0, limit)
 df = df.withColumnRenamed("id", "value")
-df = df.withColumn("source", spark.createDataFrame([(source,)], ["s"]).first()[0])
+# df = df.withColumn("source", spark.createDataFrame([(source,)], ["s"]).first()[0])
 
-df.write.mode("overwrite").saveAsTable("demo.customer_etl")
+# df.write.mode("overwrite").saveAsTable("demo.customer_etl")
 
 # COMMAND ----------
 
-display(spark.table("demo.customer_etl"))
+display(df)
