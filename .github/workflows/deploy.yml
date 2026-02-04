@@ -1,0 +1,32 @@
+name: Build & Deploy Databricks Job
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python tooling
+        run: |
+          pip install pytest build databricks-cli
+
+      - name: Run tests
+        run: pytest tests/
+
+      - name: Build wheel
+        run: python -m build
+
+      - name: Configure Databricks
+        run: |
+          databricks configure --token <<EOF
+          ${{ secrets.DATABRICKS_HOST }}
+          ${{ secrets.DATABRICKS_TOKEN }}
+          EOF
+
+      - name: Deploy bundle
+        run: databricks bundle deploy -t dev
