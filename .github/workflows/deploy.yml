@@ -13,10 +13,15 @@ jobs:
 
       - name: Install Python tooling
         run: |
-          pip install pytest build databricks-cli
+          pip install pytest build
 
       - name: Run tests
         run: pytest tests/
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
 
       # - name: Build wheel
       #   run: python -m build
