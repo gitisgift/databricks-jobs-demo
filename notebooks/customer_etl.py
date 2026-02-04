@@ -12,10 +12,16 @@ catalog = dbutils.widgets.get("catalog")
 source = dbutils.widgets.get("source")
 limit = int(dbutils.widgets.get("limit"))
 
+from src.jobs.logic import generate_rows
+
+
+
 # COMMAND ----------
 
 spark.sql(f"USE CATALOG {catalog}")
 spark.sql("CREATE SCHEMA IF NOT EXISTS demo")
+
+rows = generate_rows(limit, source)
 
 df = spark.range(0, limit)
 df = df.withColumnRenamed("id", "value")
