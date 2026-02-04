@@ -1,5 +1,5 @@
 import pytest
-from src.jobs.logic import generate_rows
+from jobs.logic import generate_rows
 
 
 def test_generate_rows_basic():

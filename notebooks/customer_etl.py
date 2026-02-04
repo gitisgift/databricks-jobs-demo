@@ -12,7 +12,7 @@ catalog = dbutils.widgets.get("catalog")
 source = dbutils.widgets.get("source")
 limit = int(dbutils.widgets.get("limit"))
 
-from src.jobs.logic import generate_rows
+from jobs.logic import generate_rows
 
 
 
