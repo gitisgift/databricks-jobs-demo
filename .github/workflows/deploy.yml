@@ -18,8 +18,8 @@ jobs:
       - name: Run tests
         run: pytest tests/
 
-      - name: Build wheel
-        run: python -m build
+      # - name: Build wheel
+      #   run: python -m build
 
       - name: Configure Databricks
         run: |
