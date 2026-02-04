@@ -26,12 +26,30 @@ jobs:
       # - name: Build wheel
       #   run: python -m build
 
-      - name: Configure Databricks
-        run: |
-          databricks configure --token <<EOF
-          ${{ secrets.DATABRICKS_HOST }}
-          ${{ secrets.DATABRICKS_TOKEN }}
-          EOF
+      # - name: Configure Databricks
+      #   run: |
+      #     databricks configure --token <<EOF
+      #     ${{ secrets.DATABRICKS_HOST }}
+      #     ${{ secrets.DATABRICKS_TOKEN }}
+      #     EOF
 
-      - name: Deploy bundle
-        run: databricks bundle deploy -t dev
+      - name: Verify Databricks CLI
+        run: |
+          databricks version
+          databricks bundle --help
+
+      - name: Deploy Databricks bundle
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
+            echo "Deploying to DEV"
+            databricks bundle validate -t dev
+            databricks bundle deploy -t dev
+          else
+            echo "Deploying to PROD"
+            databricks bundle validate -t prod
+            databricks bundle deploy -t prod
+          fi
