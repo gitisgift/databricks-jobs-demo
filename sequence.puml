@@ -1,0 +1,48 @@
+@startuml
+actor Developer
+actor ExternalAPI
+participant "Git Repository" as Git
+participant "CI/CD Pipeline" as CI
+participant "Databricks Jobs API" as Jobs
+participant "Databricks Job" as Job
+participant "Task: Extract" as Extract
+participant "Task: Load" as Load
+participant "Task: Curate" as Curate
+participant "Unity Catalog" as UC
+
+== Development ==
+Developer -> Git : Commit notebooks
+Git -> CI : Push / Merge to branch
+CI -> Jobs : databricks bundle deploy
+Jobs -> Job : Create / Update job definition
+
+== Runtime Trigger ==
+ExternalAPI -> Jobs : Get job by name
+Jobs -> ExternalAPI : job_id
+ExternalAPI -> Jobs : run-now(job_id, params)
+Jobs -> Job : Start run
+
+== Task Execution ==
+Job -> Extract : Run task
+Extract -> UC : Write bronze table
+Extract --> Job : Success
+
+Job -> Load : Run task
+Load -> UC : Read bronze / write bronze
+Load --> Job : Success
+
+Job -> Curate : Run task
+Curate -> UC : Write silver table
+Curate --> Job : Success
+
+== Completion ==
+Job -> Jobs : Report success
+Jobs -> ExternalAPI : Run completed
+
+== Failure Handling ==
+Extract -> Job : Failure
+Job -> Job : Retry (max_retries)
+Job -> Jobs : Failure after retries
+Jobs -> Developer : Alert (email / webhook)
+
+@enduml
