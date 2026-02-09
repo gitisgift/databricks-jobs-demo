@@ -28,6 +28,10 @@ jobs:
             echo "WHEEL_FILE=" >> $GITHUB_ENV
           fi
 
+      - name: Install Python tooling
+        run: |
+          pip install pytest build
+      
       - name: Run tests
         run: pytest tests/
 
