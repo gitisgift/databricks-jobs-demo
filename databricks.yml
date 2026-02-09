@@ -73,9 +73,9 @@ resources:
 
       tasks:
         - task_key: run_logic
-          job_cluster_key: shared
-          notebook_task:
-            notebook_path: notebooks/job1_task.py
+          job_cluster_key: sql_cluster
+          spark_python_task:
+            python_file: notebooks/job1_task.py
             base_parameters:
               env: ${var.env}
               release: ${var.release_version}
@@ -113,8 +113,9 @@ resources:
         - task_key: apply_sql
           job_cluster_key: job_cluster
           # existing_cluster_id: 0123-456789-abcd123
-          notebook_task:
-            notebook_path: notebooks/job2_task.py
+          # notebook_task:
+          spark_python_task:
+            python_file: notebooks/job2_task.py
             base_parameters:
               sql_file: sql/user_schema.sql
               release: ${var.release_version}
@@ -124,6 +125,6 @@ resources:
           depends_on:
             - task_key: apply_sql
           job_cluster_key: shared
-          notebook_task:
-            notebook_path: notebooks/validate.py
+          spark_python_task:
+            python_file: notebooks/validate.py
           max_retries: 0

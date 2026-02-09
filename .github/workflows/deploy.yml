@@ -68,7 +68,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      - name: Prepare wheel (if exists)
+      - name: Prepare wheel
         run: |
           if [ -f dist/mypkg.whl ]; then
             SHA=${GITHUB_SHA::7}
