@@ -76,7 +76,7 @@ resources:
           job_cluster_key: sql_cluster
           spark_python_task:
             python_file: notebooks/job1_task.py
-            base_parameters:
+            parameters:
               env: ${var.env}
               release: ${var.release_version}
           libraries:
@@ -116,7 +116,7 @@ resources:
           # notebook_task:
           spark_python_task:
             python_file: notebooks/job2_task.py
-            base_parameters:
+            parameters:
               sql_file: sql/user_schema.sql
               release: ${var.release_version}
           max_retries: 1
