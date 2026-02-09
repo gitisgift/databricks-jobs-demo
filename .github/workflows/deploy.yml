@@ -93,8 +93,8 @@ jobs:
 
       - name: Deploy bundle to ${{ matrix.env }}
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_DEV_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           databricks bundle deploy -t ${{ matrix.env }} \
             --var wheel_file=${WHEEL_FILE} \
