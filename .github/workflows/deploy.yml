@@ -1,19 +1,32 @@
-name: Build & Deploy Databricks Job
+name: Databricks Bundle CI/CD
 
 on:
   push:
-    branches: [dev]
+    branches:
+      - dev
+
+  release:
+    types: [published]
 
 jobs:
-  deploy:
+
+  deploy-dev:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Install Python tooling
+      - name: Prepare wheel (if exists)
         run: |
-          pip install pytest build
+          if [ -f dist/mypkg.whl ]; then
+            SHA=${GITHUB_SHA::7}
+            mv dist/mypkg.whl dist/mypkg-${SHA}.whl
+            echo "WHEEL_FILE=mypkg-${SHA}.whl" >> $GITHUB_ENV
+          else
+            echo "WHEEL_FILE=" >> $GITHUB_ENV
+          fi
 
       - name: Run tests
         run: pytest tests/
@@ -22,34 +35,62 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
 
+      - name: Verify Databricks CLI
+        run: |
+          databricks version
+          databricks bundle --help
 
-      # - name: Build wheel
-      #   run: python -m build
+      - name: Deploy bundle to DEV
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_DEV_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
+        run: |
+          databricks bundle deploy -t dev \
+            -v wheel_file=${WHEEL_FILE} \
+            -v release_version=${GITHUB_SHA::7}
 
-      # - name: Configure Databricks
-      #   run: |
-      #     databricks configure --token <<EOF
-      #     ${{ secrets.DATABRICKS_HOST }}
-      #     ${{ secrets.DATABRICKS_TOKEN }}
-      #     EOF
+  
+  deploy-release:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        env: [qa, prod]
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Prepare wheel (if exists)
+        run: |
+          if [ -f dist/mypkg.whl ]; then
+            SHA=${GITHUB_SHA::7}
+            mv dist/mypkg.whl dist/mypkg-${SHA}.whl
+            echo "WHEEL_FILE=mypkg-${SHA}.whl" >> $GITHUB_ENV
+          else
+            echo "WHEEL_FILE=" >> $GITHUB_ENV
+          fi
+
+      - name: Run tests
+        run: pytest tests/
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
 
       - name: Verify Databricks CLI
         run: |
           databricks version
           databricks bundle --help
 
-      - name: Deploy Databricks bundle
+      - name: Deploy bundle to ${{ matrix.env }}
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_DEV_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
         run: |
-          if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
-            echo "Deploying to DEV"
-            databricks bundle validate -t dev
-            databricks bundle deploy -t dev
-          else
-            echo "Deploying to PROD"
-            databricks bundle validate -t prod
-            databricks bundle deploy -t prod
-          fi
+          databricks bundle deploy -t ${{ matrix.env }} \
+            -v wheel_file=${WHEEL_FILE} \
+            -v release_version=${GITHUB_REF_NAME}

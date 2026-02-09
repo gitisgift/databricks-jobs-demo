@@ -1,59 +1,130 @@
 bundle:
-  name: databricks-notebook-platform
+  name: bundle-demo
 
 variables:
   env:
-    description: Deployment environment
-  catalog:
-    description: Unity Catalog for this environment
+    description: Environment
+    default: dev
+
+  wheel_file:
+    description: Wheel file name
+    default: ""
+
+  release_version:
+    description: Git release or commit
+    default: ""
 
 targets:
   dev:
     mode: development
     workspace:
-      host: https://adb-7405610998143352.12.azuredatabricks.net/
+      host: https://adb-dev.example.com
     variables:
       env: dev
-      catalog: dev
+
+
+  # We have only one workspace
+  # qa:
+  #   mode: production
+  #   workspace:
+  #     host: https://adb-qa.example.com
+  #   variables:
+  #     env: qa
 
   # prod:
   #   mode: production
   #   workspace:
-  #     host: https://adb-<WORKSPACE-ID>.azuredatabricks.net
+  #     host: https://adb-prod.example.com
   #   variables:
   #     env: prod
-  #     catalog: uc_prod
 
 resources:
-  jobs:
-    customer_etl_job:
-      name: customer-etl-${var.env}
 
-      tags:
-        environment: ${var.env}
-        git_commit: ${bundle.git.commit}
+  existing_clusters:
+    shared_dev_cluster:
+      cluster_id: 0123-456789-abcd123
+  
+  job_clusters:
+    prod_job_cluster:
+      new_cluster:
+        spark_version: 14.3.x-scala2.12
+        node_type_id: Standard_DS5_v2
+        autoscale:
+          min_workers: 3
+          max_workers: 10
+        spark_conf:
+          spark.sql.shuffle.partitions: "200"
+          spark.sql.adaptive.enabled: "true"
+          spark.databricks.delta.schema.autoMerge.enabled: "true"
+
+    
+  jobs:
+
+    notebook_wheel_job:
+      name: notebook-wheel-${var.env}
+
+      parameters:
+        - name: run_env
+          default: dev
+        - name: release
+          default: unknown
+
+      schedule:
+        quartz_cron_expression: "0 0 * * * ?"
+        timezone_id: UTC
+
+      email_notifications:
+        on_failure:
+          - test@test.com
+
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster: ${resources.job_clusters.prod_job_cluster.new_cluster}
 
       tasks:
-        - task_key: customer_etl
-          #job_cluster_key: shared_cluster
-
-          environment_key: serverless
-
+        - task_key: run_logic
+          job_cluster_key: shared
           notebook_task:
-            notebook_path: notebooks/customer_etl.py
+            notebook_path: notebooks/job1_task.py
             base_parameters:
-              catalog: ${var.catalog}
-              source: job
-              limit: "50"
+              env: ${var.env}
+              release: ${var.release_version}
+          libraries:
+            - whl: dist/${var.wheel_file}
+          max_retries: 2
+          retry_on_timeout: true
 
-      # job_clusters:
-      #   - job_cluster_key: shared_cluster
-      #     new_cluster:
-      #       spark_version: 14.3.x-scala2.12
-      #       node_type_id: Standard_DS3_v2
-      #       num_workers: 2
+    
+    notebook_sql_job:
+      name: notebook-sql-${var.env}
+      max_concurrent_runs: 1
 
-      environments:  # for serverless
-        - environment_key: serverless
-          spec:
-            client: "1"
+      schedule:
+        quartz_cron_expression: "0 30 * * * ?"
+        timezone_id: UTC
+
+      email_notifications:
+        on_failure:
+          - test@test.com
+
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster: ${resources.job_clusters.prod_job_cluster.new_cluster}
+
+      tasks:
+        - task_key: apply_sql
+          job_cluster_key: shared
+          notebook_task:
+            notebook_path: notebooks/job2_task.py
+            base_parameters:
+              sql_file: sql/user_schema.sql
+              release: ${var.release_version}
+          max_retries: 1
+
+        - task_key: validate
+          depends_on:
+            - task_key: apply_sql
+          job_cluster_key: shared
+          notebook_task:
+            notebook_path: notebooks/validate.py
+          max_retries: 0
