@@ -50,8 +50,8 @@ jobs:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
         run: |
           databricks bundle deploy -t dev \
-            -v wheel_file=${WHEEL_FILE} \
-            -v release_version=${GITHUB_SHA::7}
+            --var wheel_file=${WHEEL_FILE} \
+            --var release_version=${GITHUB_SHA::7}
 
   
   deploy-release:
