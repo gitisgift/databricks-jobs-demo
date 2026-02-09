@@ -18,7 +18,7 @@ targets:
   dev:
     mode: development
     workspace:
-      host: https://adb-dev.example.com
+      host: https://adb-7405610998143352.12.azuredatabricks.net/
     variables:
       env: dev
 
